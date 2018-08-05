@@ -267,4 +267,16 @@ defmodule BinanceTest do
       end
     end
   end
+
+  describe "#open_orders" do
+    test "returns all orders when a symbol is not provided" do
+      use_cassette "open_orders_all_success" do
+        assert {:ok, orders} = Binance.open_orders()
+
+        assert Enum.count(orders) == 2
+        assert [order_1 | _] = orders
+        assert order_1.client_order_id == "abc123"
+      end
+    end
+  end
 end

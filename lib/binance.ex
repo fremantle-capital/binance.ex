@@ -1,8 +1,8 @@
 defmodule Binance do
   @endpoint "https://api.binance.com"
 
-  @api_key  Application.get_env(:binance, :api_key)
-  @secret_key  Application.get_env(:binance, :secret_key)
+  def api_key, do: Application.get_env(:binance, :api_key)
+  def secret_key, do: Application.get_env(:binance, :secret_key)
 
   defp get_binance(url, headers \\ []) do
     HTTPoison.get("#{@endpoint}#{url}", headers)
@@ -53,7 +53,7 @@ defmodule Binance do
     signature =
       :crypto.hmac(
         :sha256,
-        @secret_key,
+        secret_key,
         argument_string
       )
       |> Base.encode16()
@@ -61,7 +61,7 @@ defmodule Binance do
     body = "#{argument_string}&signature=#{signature}"
 
     case HTTPoison.post("#{@endpoint}#{url}", body, [
-           {"X-MBX-APIKEY", @api_key}
+           {"X-MBX-APIKEY", api_key}
          ]) do
       {:error, err} ->
         {:error, {:http_error, err}}
@@ -268,7 +268,7 @@ defmodule Binance do
   """
 
   def get_account() do
-    case get_binance("/api/v3/account", %{}, @secret_key, @api_key) do
+    case get_binance("/api/v3/account", %{}, secret_key, api_key) do
       {:ok, data} -> {:ok, Binance.Account.new(data)}
       error -> error
     end
@@ -304,13 +304,13 @@ defmodule Binance do
         }}
   """
   def get_order(symbol, orderId) when is_binary(symbol) do
-    case get_binance("/api/v3/order", %{symbol: symbol, orderId: orderId}, @secret_key, @api_key) do
+    case get_binance("/api/v3/order", %{symbol: symbol, orderId: orderId}, secret_key, api_key) do
       {:ok, data} -> {:ok, Binance.OrderResponse.new(data)}
       err -> err
     end
   end
 
-  @doc"""
+  @doc """
 
   Cancel an active order.
 
@@ -340,12 +340,16 @@ defmodule Binance do
 
   """
   def cancel_order(symbol, orderId) when is_binary(symbol) do
-    case delete_binance("/api/v3/order", %{symbol: symbol, orderId: orderId}, @secret_key, @api_key) do
+    case delete_binance(
+           "/api/v3/order",
+           %{symbol: symbol, orderId: orderId},
+           secret_key,
+           api_key
+         ) do
       {:ok, data} -> {:ok, Binance.OrderResponse.new(data)}
       err -> err
     end
   end
-
 
   @doc """
   Get all open orders on a symbol. Careful when accessing this with no symbol.
@@ -380,8 +384,8 @@ defmodule Binance do
   def open_orders(symbol) when is_binary(symbol), do: execute_open_orders(%{symbol: symbol})
 
   defp execute_open_orders(params) when is_map(params) do
-    case get_binance("/api/v3/openOrders", params, @secret_key, @api_key) do
-      {:ok, data} -> {:ok, Enum.map(data, &(Binance.OrderResponse.new(&1)))}
+    case get_binance("/api/v3/openOrders", params, secret_key, api_key) do
+      {:ok, data} -> {:ok, Enum.map(data, &Binance.OrderResponse.new(&1))}
       err -> err
     end
   end
@@ -433,16 +437,16 @@ defmodule Binance do
         ]}
   """
   def all_orders(symbol) when is_binary(symbol), do: execute_all_orders(%{symbol: symbol})
+
   def all_orders(symbol, timestamp) when is_binary(symbol) and is_integer(timestamp),
     do: execute_all_orders(%{symbol: symbol, timestamp: timestamp})
 
   defp execute_all_orders(params) when is_map(params) do
-    case get_binance("/api/v3/allOrders", params, @secret_key, @api_key) do
-      {:ok, data} -> {:ok, Enum.map(data, &(Binance.OrderResponse.new(&1)))}
+    case get_binance("/api/v3/allOrders", params, secret_key, api_key) do
+      {:ok, data} -> {:ok, Enum.map(data, &Binance.OrderResponse.new(&1))}
       err -> err
     end
   end
-
 
   @doc """
   Creates a new order on binance

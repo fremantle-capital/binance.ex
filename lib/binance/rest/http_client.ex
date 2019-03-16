@@ -6,6 +6,7 @@ defmodule Binance.Rest.HTTPClient do
 
   @endpoint "https://api.binance.com"
   @receive_window 5000
+  @api_key_header "X-MBX-APIKEY"
 
   @spec get_binance(String.t(), [header]) ::
           {:ok, any} | {:error, config_error | http_error | poison_decode_error}
@@ -25,7 +26,7 @@ defmodule Binance.Rest.HTTPClient do
     do: {:error, {:config_missing, "API key missing"}}
 
   def get_binance(url, params, secret_key, api_key) do
-    headers = [{"X-MBX-APIKEY", api_key}]
+    headers = [{@api_key_header, api_key}]
     ts = DateTime.utc_now() |> DateTime.to_unix(:millisecond)
 
     params =
@@ -48,13 +49,13 @@ defmodule Binance.Rest.HTTPClient do
       |> Enum.map(fn x -> Tuple.to_list(x) |> Enum.join("=") end)
       |> Enum.join("&")
 
+    api_key = Application.get_env(:binance, :api_key)
     secret_key = Application.get_env(:binance, :secret_key)
     signature = sign(secret_key, argument_string)
     body = "#{argument_string}&signature=#{signature}"
+    headers = [{@api_key_header, api_key}]
 
-    case HTTPoison.post("#{@endpoint}#{url}", body, [
-           {"X-MBX-APIKEY", Application.get_env(:binance, :api_key)}
-         ]) do
+    case HTTPoison.post("#{@endpoint}#{url}", body, headers) do
       {:ok, response} ->
         case Poison.decode(response.body) do
           {:ok, data} -> {:ok, data}

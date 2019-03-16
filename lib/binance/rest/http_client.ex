@@ -2,7 +2,8 @@ defmodule Binance.Rest.HTTPClient do
   @endpoint "https://api.binance.com"
 
   def get_binance(url, headers \\ []) do
-    HTTPoison.get("#{@endpoint}#{url}", headers)
+    "#{@endpoint}#{url}"
+    |> HTTPoison.get(headers)
     |> parse_get_response
   end
 
@@ -60,14 +61,14 @@ defmodule Binance.Rest.HTTPClient do
     case HTTPoison.post("#{@endpoint}#{url}", body, [
            {"X-MBX-APIKEY", Application.get_env(:binance, :api_key)}
          ]) do
-      {:error, err} ->
-        {:error, {:http_error, err}}
-
       {:ok, response} ->
         case Poison.decode(response.body) do
           {:ok, data} -> {:ok, data}
           {:error, err} -> {:error, {:poison_decode_error, err}}
         end
+
+      {:error, err} ->
+        {:error, {:http_error, err}}
     end
   end
 

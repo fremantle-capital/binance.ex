@@ -401,9 +401,6 @@ defmodule Binance do
           err ->
             err
         end
-
-      err ->
-        err
     end
   end
 end

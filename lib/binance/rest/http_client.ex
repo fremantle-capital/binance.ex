@@ -3,17 +3,20 @@ defmodule Binance.Rest.HTTPClient do
   @type config_error :: {:config_missing, String.t()}
   @type http_error :: {:http_error, any}
   @type poison_decode_error :: {:poison_decode_error, Poison.ParseError.t()}
+  @type bad_symbol_error :: :bad_symbol
+  @type unhandled_binance_error :: {:binance_error, map}
+  @type shared_errors ::
+          http_error | poison_decode_error | bad_symbol_error | unhandled_binance_error
 
   @endpoint "https://api.binance.com"
   @receive_window 5000
   @api_key_header "X-MBX-APIKEY"
 
-  @spec get_binance(String.t(), [header]) ::
-          {:ok, any} | {:error, config_error | http_error | poison_decode_error}
+  @spec get_binance(String.t(), [header]) :: {:ok, any} | {:error, config_error | shared_errors}
   def get_binance(url, headers \\ []) do
     "#{@endpoint}#{url}"
     |> HTTPoison.get(headers)
-    |> parse_get_response
+    |> parse_response
   end
 
   def get_binance(_url, _params, nil, nil),
@@ -41,7 +44,7 @@ defmodule Binance.Rest.HTTPClient do
     get_binance("#{url}?#{argument_string}&signature=#{signature}", headers)
   end
 
-  @spec post_binance(String.t(), map) :: {:ok, any} | {:error, http_error | poison_decode_error}
+  @spec post_binance(String.t(), map) :: {:ok, any} | {:error, shared_errors}
   def post_binance(url, params) do
     argument_string =
       params
@@ -55,39 +58,24 @@ defmodule Binance.Rest.HTTPClient do
     body = "#{argument_string}&signature=#{signature}"
     headers = [{@api_key_header, api_key}]
 
-    case HTTPoison.post("#{@endpoint}#{url}", body, headers) do
-      {:ok, response} ->
-        case Poison.decode(response.body) do
-          {:ok, data} -> {:ok, data}
-          {:error, err} -> {:error, {:poison_decode_error, err}}
-        end
-
-      {:error, err} ->
-        {:error, {:http_error, err}}
-    end
+    "#{@endpoint}#{url}"
+    |> HTTPoison.post(body, headers)
+    |> parse_response()
   end
 
   defp sign(secret_key, argument_string),
     do: :sha256 |> :crypto.hmac(secret_key, argument_string) |> Base.encode16()
 
-  defp parse_get_response({:ok, response}) do
+  defp parse_response({:ok, response}) do
     response.body
     |> Poison.decode()
     |> parse_response_body
   end
 
-  defp parse_get_response({:error, err}) do
-    {:error, {:http_error, err}}
-  end
+  defp parse_response({:error, err}), do: {:error, {:http_error, err}}
 
-  defp parse_response_body({:ok, data}) do
-    case data do
-      %{"code" => _c, "msg" => _m} = error -> {:error, error}
-      _ -> {:ok, data}
-    end
-  end
-
-  defp parse_response_body({:error, err}) do
-    {:error, {:poison_decode_error, err}}
-  end
+  defp parse_response_body({:ok, %{"code" => -1121}}), do: {:error, :bad_symbol}
+  defp parse_response_body({:ok, %{"code" => _} = reason}), do: {:error, {:binance_error, reason}}
+  defp parse_response_body({:ok, _} = result), do: result
+  defp parse_response_body({:error, err}), do: {:error, {:poison_decode_error, err}}
 end

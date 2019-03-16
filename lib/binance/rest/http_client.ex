@@ -35,14 +35,7 @@ defmodule Binance.Rest.HTTPClient do
       })
 
     argument_string = URI.encode_query(params)
-
-    signature =
-      :crypto.hmac(
-        :sha256,
-        secret_key,
-        argument_string
-      )
-      |> Base.encode16()
+    signature = sign(secret_key, argument_string)
 
     get_binance("#{url}?#{argument_string}&signature=#{signature}", headers)
   end
@@ -55,15 +48,8 @@ defmodule Binance.Rest.HTTPClient do
       |> Enum.map(fn x -> Tuple.to_list(x) |> Enum.join("=") end)
       |> Enum.join("&")
 
-    # generate signature
-    signature =
-      :crypto.hmac(
-        :sha256,
-        Application.get_env(:binance, :secret_key),
-        argument_string
-      )
-      |> Base.encode16()
-
+    secret_key = Application.get_env(:binance, :secret_key)
+    signature = sign(secret_key, argument_string)
     body = "#{argument_string}&signature=#{signature}"
 
     case HTTPoison.post("#{@endpoint}#{url}", body, [
@@ -79,6 +65,9 @@ defmodule Binance.Rest.HTTPClient do
         {:error, {:http_error, err}}
     end
   end
+
+  defp sign(secret_key, argument_string),
+    do: :sha256 |> :crypto.hmac(secret_key, argument_string) |> Base.encode16()
 
   defp parse_get_response({:ok, response}) do
     response.body

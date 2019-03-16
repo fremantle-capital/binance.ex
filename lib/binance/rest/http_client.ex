@@ -5,6 +5,7 @@ defmodule Binance.Rest.HTTPClient do
   @type poison_decode_error :: {:poison_decode_error, Poison.ParseError.t()}
 
   @endpoint "https://api.binance.com"
+  @receive_window 5000
 
   @spec get_binance(String.t(), [header]) ::
           {:ok, any} | {:error, config_error | http_error | poison_decode_error}
@@ -25,13 +26,12 @@ defmodule Binance.Rest.HTTPClient do
 
   def get_binance(url, params, secret_key, api_key) do
     headers = [{"X-MBX-APIKEY", api_key}]
-    receive_window = 5000
     ts = DateTime.utc_now() |> DateTime.to_unix(:millisecond)
 
     params =
       Map.merge(params, %{
         timestamp: ts,
-        recvWindow: receive_window
+        recvWindow: @receive_window
       })
 
     argument_string = URI.encode_query(params)

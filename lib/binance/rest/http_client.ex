@@ -1,6 +1,13 @@
 defmodule Binance.Rest.HTTPClient do
+  @type header :: {key :: String.t(), value :: String.t()}
+  @type config_error :: {:config_missing, String.t()}
+  @type http_error :: {:http_error, any}
+  @type poison_decode_error :: {:poison_decode_error, Poison.ParseError.t()}
+
   @endpoint "https://api.binance.com"
 
+  @spec get_binance(String.t(), [header]) ::
+          {:ok, any} | {:error, config_error | http_error | poison_decode_error}
   def get_binance(url, headers \\ []) do
     "#{@endpoint}#{url}"
     |> HTTPoison.get(headers)
@@ -40,6 +47,7 @@ defmodule Binance.Rest.HTTPClient do
     get_binance("#{url}?#{argument_string}&signature=#{signature}", headers)
   end
 
+  @spec post_binance(String.t(), map) :: {:ok, any} | {:error, http_error | poison_decode_error}
   def post_binance(url, params) do
     argument_string =
       params

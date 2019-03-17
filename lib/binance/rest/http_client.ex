@@ -2,12 +2,14 @@ defmodule Binance.Rest.HTTPClient do
   @type header :: {key :: String.t(), value :: String.t()}
   @type config_error :: {:config_missing, String.t()}
   @type timeout_error :: :timeout
+  @type connect_timeout_error :: :connect_timeout
   @type http_error :: {:http_error, any}
   @type poison_decode_error :: {:poison_decode_error, Poison.ParseError.t()}
   @type bad_symbol_error :: :bad_symbol
   @type unhandled_binance_error :: {:binance_error, map}
   @type shared_errors ::
           timeout_error
+          | connect_timeout_error
           | http_error
           | poison_decode_error
           | bad_symbol_error
@@ -79,6 +81,9 @@ defmodule Binance.Rest.HTTPClient do
 
   defp parse_response({:error, %HTTPoison.Error{id: nil, reason: :timeout}}),
     do: {:error, :timeout}
+
+  defp parse_response({:error, %HTTPoison.Error{id: nil, reason: :connect_timeout}}),
+    do: {:error, :connect_timeout}
 
   defp parse_response({:error, err}), do: {:error, {:http_error, err}}
 

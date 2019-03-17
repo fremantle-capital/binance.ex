@@ -21,15 +21,23 @@ defmodule Binance.Rest.HTTPClientTest do
     end
   end
 
-  test ".get_binance bubbles other errors" do
-    with_mock HTTPoison,
-      get: fn _url, _headers -> {:error, %HTTPoison.Error{reason: :timeout}} end do
-      assert Binance.Rest.HTTPClient.get_binance(
-               "/api/v1/time",
-               %{},
-               "invalid-secret-key",
-               "invalid-api-key"
-             ) == {:error, :timeout}
+  [:timeout, :connect_timeout]
+  |> Enum.each(fn error_reason ->
+    @error_reason error_reason
+
+    test ".get_binance returns an error tuple for #{error_reason} errors" do
+      with_mock HTTPoison,
+        get: fn _url, _headers -> {:error, %HTTPoison.Error{reason: @error_reason}} end do
+        assert {:error, reason} =
+                 Binance.Rest.HTTPClient.get_binance(
+                   "/api/v1/time",
+                   %{},
+                   "invalid-secret-key",
+                   "invalid-api-key"
+                 )
+
+        assert reason == @error_reason
+      end
     end
-  end
+  end)
 end

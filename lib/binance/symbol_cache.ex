@@ -13,7 +13,8 @@ defmodule Binance.SymbolCache do
     Agent.start_link(fn -> nil end, name: @id)
   end
 
-  def get() do
+  @spec get() :: {:ok, term} | {:error, :not_initialized}
+  def get do
     case Agent.get(@id, fn state -> state end) do
       nil -> {:error, :not_initialized}
       data -> {:ok, data}

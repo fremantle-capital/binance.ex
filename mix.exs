@@ -29,6 +29,7 @@ defmodule Binance.MixProject do
       {:poison, "~> 4.0.0"},
       {:exconstructor, "~> 1.1.0"},
       {:ex_doc, ">= 0.0.0", only: :dev},
+      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
       {:mix_test_watch, "~> 0.5", only: :dev, runtime: false},
       {:exvcr, "~> 0.10.1", only: :test}
     ]

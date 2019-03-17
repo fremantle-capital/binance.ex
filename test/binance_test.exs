@@ -93,10 +93,7 @@ defmodule BinanceTest do
 
     test "returns an error tuple when the symbol doesn't exist" do
       use_cassette "get_ticker_error" do
-        assert Binance.get_ticker("IDONTEXIST") == {
-                 :error,
-                 %{"code" => -1121, "msg" => "Invalid symbol."}
-               }
+        assert Binance.get_ticker("IDONTEXIST") == {:error, :bad_symbol}
       end
     end
   end
@@ -129,10 +126,7 @@ defmodule BinanceTest do
 
     test "returns an error tuple when the symbol doesn't exist" do
       use_cassette "get_depth_error" do
-        assert Binance.get_depth("IDONTEXIST", 1000) == {
-                 :error,
-                 %{"code" => -1121, "msg" => "Invalid symbol."}
-               }
+        assert Binance.get_depth("IDONTEXIST", 1000) == {:error, :bad_symbol}
       end
     end
   end
@@ -201,8 +195,8 @@ defmodule BinanceTest do
 
         assert reason == %Binance.InsufficientBalanceError{
                  reason: %{
-                   code: -2010,
-                   msg: "Account has insufficient balance for requested action."
+                   "code" => -2010,
+                   "msg" => "Account has insufficient balance for requested action."
                  }
                }
       end

@@ -340,7 +340,8 @@ defmodule Binance do
          :error,
          {
            :binance_error,
-           %{code: -2010, msg: "Account has insufficient balance for requested action."} = reason
+           %{"code" => -2010, "msg" => "Account has insufficient balance for requested action."} =
+             reason
          }
        }) do
     {:error, %Binance.InsufficientBalanceError{reason: reason}}

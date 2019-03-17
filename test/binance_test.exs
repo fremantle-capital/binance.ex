@@ -131,134 +131,81 @@ defmodule BinanceTest do
     end
   end
 
-  describe ".order_limit_buy" do
-    test "creates an order with a duration of good til cancel by default" do
-      use_cassette "order_limit_buy_good_til_cancel_default_duration_success" do
-        assert {:ok, %Binance.OrderResponse{} = response} =
-                 Binance.order_limit_buy("LTCBTC", 0.1, 0.01)
+  [:buy, :sell]
+  |> Enum.each(fn side ->
+    @side side
 
-        assert response.client_order_id == "9kITBshSwrClye1HJcLM3j"
-        assert response.executed_qty == "0.00000000"
-        assert response.order_id == 47_511_548
-        assert response.orig_qty == "0.10000000"
-        assert response.price == "0.01000000"
-        assert response.side == "BUY"
-        assert response.status == "NEW"
-        assert response.symbol == "LTCBTC"
-        assert response.time_in_force == "GTC"
-        assert response.transact_time == 1_527_278_150_709
-        assert response.type == "LIMIT"
+    describe ".order_limit_#{side}" do
+      test "creates an order with a duration of good til cancel by default" do
+        use_cassette "order_limit_#{@side}_good_til_cancel_default_duration_success" do
+          assert {:ok, %Binance.OrderResponse{} = response} =
+                   apply(Binance, :"order_limit_#{@side}", ["LTCBTC", 0.1, 0.01])
+
+          assert response.client_order_id != nil
+          assert response.executed_qty == "0.00000000"
+          assert response.order_id != nil
+          assert response.orig_qty != nil
+          assert response.price != nil
+          assert response.side == @side |> Atom.to_string() |> String.upcase()
+          assert response.status == "NEW"
+          assert response.symbol != nil
+          assert response.time_in_force == "GTC"
+          assert response.transact_time != nil
+          assert response.type == "LIMIT"
+        end
       end
-    end
 
-    test "can create an order with a fill or kill duration" do
-      use_cassette "order_limit_buy_fill_or_kill_success" do
-        assert {:ok, %Binance.OrderResponse{} = response} =
-                 Binance.order_limit_buy("LTCBTC", 0.1, 0.01, "FOK")
+      test "can create an order with a fill or kill duration" do
+        use_cassette "order_limit_#{@side}_fill_or_kill_success" do
+          assert {:ok, %Binance.OrderResponse{} = response} =
+                   apply(Binance, :"order_limit_#{@side}", ["LTCBTC", 0.1, 0.01, "FOK"])
 
-        assert response.client_order_id == "dY67P33S4IxPnJGx5EtuSf"
-        assert response.executed_qty == "0.00000000"
-        assert response.order_id == 47_527_179
-        assert response.orig_qty == "0.10000000"
-        assert response.price == "0.01000000"
-        assert response.side == "BUY"
-        assert response.status == "EXPIRED"
-        assert response.symbol == "LTCBTC"
-        assert response.time_in_force == "FOK"
-        assert response.transact_time == 1_527_290_557_607
-        assert response.type == "LIMIT"
+          assert response.client_order_id != nil
+          assert response.executed_qty == "0.00000000"
+          assert response.order_id != nil
+          assert response.orig_qty != nil
+          assert response.price != nil
+          assert response.side == @side |> Atom.to_string() |> String.upcase()
+          assert response.status == "EXPIRED"
+          assert response.symbol != nil
+          assert response.time_in_force == "FOK"
+          assert response.transact_time != nil
+          assert response.type == "LIMIT"
+        end
       end
-    end
 
-    test "can create an order with am immediate or cancel duration" do
-      use_cassette "order_limit_buy_immediate_or_cancel_success" do
-        assert {:ok, %Binance.OrderResponse{} = response} =
-                 Binance.order_limit_buy("LTCBTC", 0.1, 0.01, "IOC")
+      test "can create an order with am immediate or cancel duration" do
+        use_cassette "order_limit_#{@side}_immediate_or_cancel_success" do
+          assert {:ok, %Binance.OrderResponse{} = response} =
+                   apply(Binance, :"order_limit_#{@side}", ["LTCBTC", 0.1, 0.01, "IOC"])
 
-        assert response.client_order_id == "zyMyhtRENlvFHrl4CitDe0"
-        assert response.executed_qty == "0.00000000"
-        assert response.order_id == 47_528_830
-        assert response.orig_qty == "0.10000000"
-        assert response.price == "0.01000000"
-        assert response.side == "BUY"
-        assert response.status == "EXPIRED"
-        assert response.symbol == "LTCBTC"
-        assert response.time_in_force == "IOC"
-        assert response.transact_time == 1_527_291_300_912
-        assert response.type == "LIMIT"
+          assert response.client_order_id != nil
+          assert response.executed_qty == "0.00000000"
+          assert response.order_id != nil
+          assert response.orig_qty != nil
+          assert response.price != nil
+          assert response.side == @side |> Atom.to_string() |> String.upcase()
+          assert response.status == "EXPIRED"
+          assert response.symbol != nil
+          assert response.time_in_force == "IOC"
+          assert response.transact_time != nil
+          assert response.type == "LIMIT"
+        end
       end
-    end
 
-    test "returns an insufficient balance error tuple" do
-      use_cassette "order_limit_buy_error_insufficient_balance" do
-        assert {:error, reason} = Binance.order_limit_buy("LTCBTC", 10_000, 0.001, "FOK")
+      test "returns an insufficient balance error tuple" do
+        use_cassette "order_limit_#{@side}_error_insufficient_balance" do
+          assert {:error, reason} =
+                   apply(Binance, :"order_limit_#{@side}", ["LTCBTC", 10_000, 0.001, "FOK"])
 
-        assert reason == %Binance.InsufficientBalanceError{
-                 reason: %{
-                   "code" => -2010,
-                   "msg" => "Account has insufficient balance for requested action."
+          assert reason == %Binance.InsufficientBalanceError{
+                   reason: %{
+                     "code" => -2010,
+                     "msg" => "Account has insufficient balance for requested action."
+                   }
                  }
-               }
+        end
       end
     end
-  end
-
-  describe ".order_limit_sell" do
-    test "creates an order with a duration of good til cancel by default" do
-      use_cassette "order_limit_sell_good_til_cancel_default_duration_success" do
-        assert {:ok, %Binance.OrderResponse{} = response} =
-                 Binance.order_limit_sell("BTCUSDT", 0.001, 50_000)
-
-        assert response.client_order_id == "9UFMPloZsQ3eshCx66PVqD"
-        assert response.executed_qty == "0.00000000"
-        assert response.order_id == 108_212_133
-        assert response.orig_qty == "0.00100000"
-        assert response.price == "50000.00000000"
-        assert response.side == "SELL"
-        assert response.status == "NEW"
-        assert response.symbol == "BTCUSDT"
-        assert response.time_in_force == "GTC"
-        assert response.transact_time == 1_527_279_796_770
-        assert response.type == "LIMIT"
-      end
-    end
-
-    test "can create an order with a fill or kill duration" do
-      use_cassette "order_limit_sell_fill_or_kill_success" do
-        assert {:ok, %Binance.OrderResponse{} = response} =
-                 Binance.order_limit_sell("BTCUSDT", 0.001, 50_000, "FOK")
-
-        assert response.client_order_id == "lKYECwEPSTPzurwx6emuN2"
-        assert response.executed_qty == "0.00000000"
-        assert response.order_id == 108_277_184
-        assert response.orig_qty == "0.00100000"
-        assert response.price == "50000.00000000"
-        assert response.side == "SELL"
-        assert response.status == "EXPIRED"
-        assert response.symbol == "BTCUSDT"
-        assert response.time_in_force == "FOK"
-        assert response.transact_time == 1_527_290_985_305
-        assert response.type == "LIMIT"
-      end
-    end
-
-    test "can create an order with am immediate or cancel duration" do
-      use_cassette "order_limit_sell_immediate_or_cancel_success" do
-        assert {:ok, %Binance.OrderResponse{} = response} =
-                 Binance.order_limit_sell("BTCUSDT", 0.001, 50_000, "IOC")
-
-        assert response.client_order_id == "roSkLhwX9KCgYqr4yFPx1V"
-        assert response.executed_qty == "0.00000000"
-        assert response.order_id == 108_279_070
-        assert response.orig_qty == "0.00100000"
-        assert response.price == "50000.00000000"
-        assert response.side == "SELL"
-        assert response.status == "EXPIRED"
-        assert response.symbol == "BTCUSDT"
-        assert response.time_in_force == "IOC"
-        assert response.transact_time == 1_527_291_411_088
-        assert response.type == "LIMIT"
-      end
-    end
-  end
+  end)
 end

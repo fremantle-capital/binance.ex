@@ -1,6 +1,7 @@
 defmodule BinanceTest do
   use ExUnit.Case
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
+  import Mock
   doctest Binance
 
   setup_all do
@@ -204,6 +205,16 @@ defmodule BinanceTest do
                      "msg" => "Account has insufficient balance for requested action."
                    }
                  }
+        end
+      end
+
+      test "bubbles other errors" do
+        error = {:error, %HTTPoison.Error{reason: :timeout}}
+
+        with_mock HTTPoison,
+          post: fn _url, _body, _headers -> error end do
+          assert apply(Binance, :"order_limit_#{@side}", ["LTCBTC", 10_000, 0.001, "FOK"]) ==
+                   {:error, :timeout}
         end
       end
     end

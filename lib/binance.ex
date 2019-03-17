@@ -347,6 +347,8 @@ defmodule Binance do
     {:error, %Binance.InsufficientBalanceError{reason: reason}}
   end
 
+  defp parse_order_response({:error, _} = error), do: error
+
   # Misc
 
   @doc """
